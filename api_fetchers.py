@@ -169,6 +169,39 @@ def aggregate_max_impressions_daily(df):
 
 
 # =========================
+# MAX REVENUE REPORTING API
+# =========================
+def fetch_max_revenue_by_network(date_from, date_to):
+    """
+    Fetch daily revenue by ad network from AppLovin MAX Revenue Reporting API.
+    Returns DataFrame with columns: day, network, revenue
+
+    API reference: https://support.applovin.com/en/max/reporting-apis/revenue-reporting-api
+    """
+    url = "https://r.applovin.com/report"
+
+    params = {
+        "api_key": MAX_API_KEY,
+        "start": date_from,
+        "end": date_to,
+        "columns": "day,network,revenue",
+        "format": "csv",
+    }
+
+    res = requests.get(url, params=params)
+
+    df = pd.read_csv(pd.io.common.StringIO(res.text))
+    df.columns = df.columns.str.lower().str.strip()
+
+    if "day" not in df.columns or "network" not in df.columns:
+        print("MAX Revenue API error. Response:", res.text[:200])
+        return pd.DataFrame()
+
+    df["revenue"] = pd.to_numeric(df["revenue"], errors="coerce").fillna(0.0)
+    return df
+
+
+# =========================
 # TRANSFORM (shared logic)
 # =========================
 def build_report_table(adj_df, imp_df, is_weekly=True):
